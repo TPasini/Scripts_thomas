@@ -1,0 +1,74 @@
+PROGRAM cooltime
+  IMPLICIT NONE
+  INTEGER:: ans, i, ndati
+  REAL*8,ALLOCATABLE:: rho(:), T(:), p(:), n(:), t_cool(:), kT(:)
+  REAL*8:: k, mu, mh
+
+50 PRINT*, 'Vuoi calcolare una serie di valori da un file o uno solo da terminale?'
+  PRINT*,       '1. File'
+  PRINT*,       '2. Terminale'
+
+  READ(*,*) ans
+
+  k=1.38e-16
+  mu=0.61
+  mh=1.67e-24
+
+  IF(ans==1) THEN
+     PRINT*, 'I valori di densità e temperatura vengono letti da un file chiamato Percooling.dat.'
+     PRINT*, 'Crearlo aggiungendo le T in keV al file rho.dat.'
+     PRINT*, 'I risultati si trovano nel file Results.dat.'
+     OPEN(10, file='Percooling.dat')
+     i=0
+
+      DO
+        READ(10,*,end=100)
+        i=i+1
+      END DO
+
+      100 CONTINUE
+      ndati=i
+
+    ALLOCATE(rho(ndati), T(ndati), p(ndati), n(ndati), t_cool(ndati), kT(ndati))
+
+    REWIND(10)
+
+    OPEN(20, file='Results.dat')
+
+    WRITE(20,*) '  Pressure:', '                         ', 'Cooling time:'
+    WRITE(20,*) '                                                      '
+ DO i=1,ndati
+    READ(10,*) rho(i), kT(i)
+    T(i)=((kT(i))*1000)*(1.6e-12)/(1.38e-16)
+    p(i)=(rho(i)*k*T(i))/(mu*mh)
+
+    n(i)=rho(i)/(mu*mh)
+    t_cool(i)=8.5e+10*(n(i)/(1e-3))**(-1)*(T(i)/1e+8)**(0.5)
+
+    WRITE(20,*) p(i), 'dy/cm^2', t_cool(i)/1e+9, 'Gyr'
+    
+ END DO
+
+
+ELSE IF(ans==2) THEN
+   ALLOCATE(rho(1), T(1), p(1), n(1), t_cool(1), kT(1))
+   PRINT*, 'Densita numerica in cm^-3?'
+   READ(*,*) n
+   PRINT*, 'Temperatura in keV?'
+   READ(*,*) kT
+
+   T=((kT*1000)*(1.6e-12))/(1.38e-16)
+   rho=n*mu*mh
+   p=(rho*k*T)/(mu*mh)
+   PRINT*, 'Pressure:', p, 'dy/cm^2'
+   n=rho/(mu*mh)
+   t_cool=8.5e+10*(n/(1e-3))**(-1)*(T/1e+8)**(0.5)
+   PRINT*, 'Cooling time:',t_cool/1e+9, 'Gyr'
+
+
+ELSE
+   PRINT*, 'Digita 1 o 2'
+   GO TO 50
+END IF
+
+END PROGRAM cooltime

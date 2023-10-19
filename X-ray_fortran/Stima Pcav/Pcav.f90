@@ -1,0 +1,192 @@
+! Questo programma calcola età e potenza delle cavità dell'ICM, dati pressione, assi degli ellissi, distanza dal centro del cluster, massa in corrispondenza di quel raggio, kT
+PROGRAM Pcav
+
+IMPLICIT NONE
+REAL*8:: pi
+INTEGER:: i, ndati, ans, ans2
+REAL*16:: major, minor, errmajor, errminor, kt, errkt, dist, errdist, gamma, mu, mp, cs, tcav, V, A, press
+REAL*8:: errpress, pV, P, mass, errmass, Ggrav, vbuoy, errcs, errtcav, errV, errpV, errg, errA
+REAL*16:: g, errP, errvel, errt
+
+pi=3.1415
+gamma=1.67
+mu=0.61
+mp=1.67e-24
+Ggrav=6.67e-08
+
+PRINT*, '                                                                      '
+PRINT*, '######################################################################'
+PRINT*, "########### STIMA DELLE PROPRIETA' DELLE CAVITA' DELL'ICM ############"
+PRINT*, '######################################################################'
+PRINT*, '                                                                      '
+PRINT*, 'Digita 1 per usare la velocità del suono, 2 per usare quella di buoyancy'
+PRINT*, 'N.B. : Nel secondo caso, è richiesta la massa entro la distanza della cavità dal centro'
+READ(*,*) ans
+
+IF(ans==1) THEN
+ PRINT*, 'Asse maggiore in kpc?'
+ READ(*,*) major
+ PRINT*, 'Errore?'
+ READ(*,*) errmajor
+ PRINT*, 'Asse minore in kpc?'
+ READ(*,*) minor
+ PRINT*, 'Errore?'
+ READ(*,*) errminor
+ PRINT*, 'Valore di kT in keV?'
+ READ(*,*) kt
+ PRINT*, 'Errore?'
+ READ(*,*) errkt
+ PRINT*, 'Distanza dalla regione di formazione in kpc?'
+ READ(*,*) dist
+ PRINT*, 'Errore?'
+ READ(*,*) errdist
+
+cs=sqrt((gamma*(kt*(1e+3)*(1.6e-12))/(mu*mp)))
+errcs=0.5*(sqrt(gamma/(mu*mp)))*(1/(sqrt(kt*(1e+3)*(1.6e-12))))*(errkt*(1e+3)*(1.6e-12))
+
+tcav=((dist*3e+21)/cs)/(pi*1e+7)
+errtcav=sqrt((((1/cs)**2)*((errdist*3d+21)**2))+(((dist*3d+21)/(cs**2))**2)*(errcs**2))
+
+PRINT*, "Digita 1 per elissoide oblato (asse c=asse maggiore), 2 per prolato (asse c=asse minore)"
+ READ(*,*) ans2
+
+  IF(ans2==1) THEN
+      V=1.33*pi*((major/2)**2)*(minor/2)
+      errV=(4/3)*pi*(major/2)*(sqrt((((major/2)**2)*(errminor**2))+(4*(minor/2)**2*(errmajor**2))))
+  ELSE IF(ans2==2) THEN
+      V=1.33*pi*(major/2)*((minor/2)**2)
+      errV=(4/3)*pi*(minor/2)*(sqrt((((minor/2)**2)*(errmajor**2))+(4*(major/2)**2*(errminor**2))))
+  ELSE 
+  PRINT*, 'Digita 1 o 2'
+  END IF
+   
+PRINT*, 'Pressione in dy/cm^2?'
+READ(*,*) press
+PRINT*, 'Errore?'
+READ(*,*) errpress
+
+pV=press*(V*(2.7d+64))
+errpV=((V*(2.7d+64))*errpress)+press*(errV*(2.7d+64))
+!VIENE PIU ALTO DI QUELLO CON GLI ERRORI RELATIVI: STRANO
+
+P=(4*pV)/(tcav*(pi*1e+7))
+errP=sqrt((((4*errpV)/(tcav*(pi*1e+7)))**2)+((((4*pV)/((tcav*(pi*1e+7))**2))**2)*(errtcav**2)))
+
+PRINT*, '                                                                      '
+PRINT*, '######################################################################'
+PRINT*, '####################          RISULTATI           ####################'      
+PRINT*, '######################################################################'
+PRINT*, '                                                                      '
+
+WRITE(*,'(A,F10.2,A)'), 'La velocità del suono è', cs/(1e+5), ' km/s'
+WRITE(*,'(A,F10.2,A)'), "L'errore sulla velocità è", errcs/(1e+5), ' km/s'
+WRITE(*,'(A,F10.2,A)'), "L'età della cavità è", tcav/(1e+6), ' Myr'
+WRITE(*,'(A,F10.2,A)'), "L'errore sull'età è", errtcav/(pi*1e+13), ' Myr'
+WRITE(*,'(A,F10.2,A)'), 'Il volume della cavità è', V, ' kpc^3'
+WRITE(*,'(A,F10.2,A)'), "L'errore sul volume è", errV, ' kpc^3'
+WRITE(*,'(A,E10.3,A)'), 'Il pV vale', pV, ' erg'
+WRITE(*,'(A,E10.3,A)'), "L'errore su pV vale", errpV, 'erg'
+WRITE(*,'(A,E10.3,A)'), 'La potenza della cavità è', P, ' erg/s'
+WRITE(*,'(A,E10.3,A)'), "L'errore sulla potenza è", errP, ' erg/s'
+
+PRINT*, '                                                                      '
+PRINT*, '######################################################################'
+PRINT*, '                                                                      '
+
+
+!VELOCITA DI BUOYANCY
+
+
+ELSE IF(ans==2) THEN
+
+PRINT*, 'Asse maggiore in kpc?'
+ READ(*,*) major
+ PRINT*, 'Errore?'
+ READ(*,*) errmajor
+ PRINT*, 'Asse minore in kpc?'
+ READ(*,*) minor
+ PRINT*, 'Errore?'
+ READ(*,*) errminor
+ PRINT*, 'Distanza dalla regione di formazione in kpc?'
+ READ(*,*) dist
+ PRINT*, 'Errore?'
+ READ(*,*) errdist
+ PRINT*, 'Massa contenuta entro questa distanza in M_sun?'
+ READ(*,*) mass
+ PRINT*, 'Errore?'
+ READ(*,*) errmass
+
+g=(Ggrav*mass*(2d+33)/((dist*(3d+21))**2))
+
+errg=sqrt((((Ggrav*(errmass*(2d+33)))/((dist*(3d+21))**2))**2)+(((((-2)*Ggrav*(mass*(2d+33))) &
+/((dist*(3d+21))**3))**2)*((errdist*(3d+21))**2)))
+
+
+A=4*pi*(major/2)*(minor/2)
+errA=sqrt(((4*pi*(minor/2)*(errmajor))**2)+(((4*pi*(major/2)*(errminor)))**2))
+
+PRINT*, "Digita 1 per elissoide oblato (asse c=asse maggiore), 2 per prolato (asse c=asse minore)"
+ READ(*,*) ans2
+
+  IF(ans2==1) THEN
+      V=1.33*pi*((major/2)**2)*(minor/2)
+      errV=(4/3)*pi*(major/2)*(sqrt((((major/2)**2)*(errminor**2))+(4*(minor/2)**2*(errmajor**2))))
+  ELSE IF(ans2==2) THEN
+      V=1.33*pi*(major/2)*((minor/2)**2)
+      errV=(4/3)*pi*(minor/2)*(sqrt((((minor/2)**2)*(errmajor**2))+(4*(major/2)**2*(errminor**2))))
+  ELSE 
+  PRINT*, 'Digita 1 o 2'
+  END IF
+
+
+vbuoy=sqrt(2*g*(V*(2.7d+64))/(0.75*A*(9d+42)))
+!errvel= sqrt(((0.5*((2*V*(2.7d+64))/(0.75*A*(9d+42)))**(-1))*(errg**2)) + &
+!        (((0.5*(2*g)/(0.75*A*(9d+42)))**(-1))*((errV**2)*(2.7d+64))) + &
+!        (((-0.5*((2*g*(V*(2.7d+64)))/(0.75*((A**2)*(9d+42)))))**(-1))*((errA**2)*(9d+42))))
+
+!CALCOLO L'ERRORE SULLA VELOCITA CON GLI ERRORI RELATIVI, PERCHE LE DERIVATE VANNO SOPRA A 10^99
+errvel= 0.5*(((errg/g)+(errV/V)+(errA/A))*vbuoy)
+
+tcav=((dist*3e+21)/vbuoy)/(pi*1e+7)
+errt=(sqrt((((errdist*(3e+21))/vbuoy)**2)+((((-dist*(3e+21))/(vbuoy**2))**2)*(errvel**2))))/(pi*1e+7)
+
+PRINT*, 'Pressione in dy/cm^2?'
+READ(*,*) press
+PRINT*, 'Errore?'
+READ(*,*) errpress
+
+pV=press*(V*(2.7d+64))
+errpV=((V*(2.7d+64))*errpress)+press*(errV*(2.7d+64))
+
+P=(4*pV)/(tcav*(pi*1e+7))
+errP=sqrt((((4*errpV)/(tcav*(pi*1e+7)))**2)+((((4*pV)/((tcav*(pi*1e+7))**2))**2)*(errtcav**2)))
+
+
+PRINT*, '                                                                      '
+PRINT*, '######################################################################'
+PRINT*, '####################          RISULTATI           ####################'      
+PRINT*, '######################################################################'
+PRINT*, '                                                                      '
+
+WRITE(*,'(A,E10.3,A)'), "L'accelerazione di gravità è", g, ' cm/s^2'
+WRITE(*,'(A,E10.3,A)'), "L'errore sull'accelerazione è", errg, ' cm/s^2'
+WRITE(*,'(A,F10.2,A)'), "L'area della cavità è", A, " kpc^2"
+WRITE(*,'(A,F10.2,A)'), "L'errore sull'area è", errA, " kpc^2"
+WRITE(*,'(A,F10.2,A)'), 'Il volume della cavità è', V, ' kpc^3'
+WRITE(*,'(A,F10.2,A)'), "L'errore sul volume è", errV, ' kpc^3'
+WRITE(*,'(A,F10.2,A)'), 'La velocità di buoyancy vale', vbuoy/(1e+5), ' km/s'
+WRITE(*,'(A,F10.2,A)'), "L'errore sulla velocità vale", errvel/(1e+5), ' km/s'
+WRITE(*,'(A,F10.2,A)'), "L'età della cavità è", tcav/(1e+6), ' Myr'
+WRITE(*,'(A,F10.2,A)'), "L'errore sull'età vale", errt/(1e+6), ' Myr'
+WRITE(*,'(A,E10.3,A)'), 'Il pV vale', pV, ' erg'
+WRITE(*,'(A,E10.3,A)'), "L'errore su pV vale", errpV, 'erg'
+WRITE(*,'(A,E10.3,A)'), 'La potenza della cavità è', P, ' erg/s'
+WRITE(*,'(A,E10.3,A)'), "L'errore sulla potenza è", errP, ' erg/s'
+
+PRINT*, '                                                                      '
+PRINT*, '######################################################################'
+PRINT*, '                                                                      '
+
+END IF
+
+END PROGRAM Pcav

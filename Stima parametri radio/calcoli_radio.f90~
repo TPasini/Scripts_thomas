@@ -1,0 +1,133 @@
+PROGRAM calcoliradio
+IMPLICIT NONE
+REAL*8:: pi, c, k, z, D_L, alpha, S, freq, a, b, L, bright, T, V, E, epsilon, H
+REAL*8:: D_Liniz, ccost, deltaflux, deltaalpha, deltaL, deltaa, deltab, deltac
+REAL*8:: deltabright, deltaT, deltaV, deltaE, deltaepsilon, deltaH
+INTEGER:: ans
+
+pi=3.1415
+ccost=3e+10
+k=1.38e-16
+
+PRINT*, '                                                                      '
+PRINT*, '######################################################################'
+PRINT*, "########### STIMA DELLE PROPRIETA' DI UNA RADIOSORGENTE ##############"
+PRINT*, '######################################################################'
+PRINT*, '                                                                      '
+
+
+PRINT*, 'Inserisci redshift'
+READ(*,*) z
+
+PRINT*, 'Inserisci distanza di luminosita in Mpc'
+READ(*,*) D_Liniz
+
+D_L=D_Liniz*(3e+24)
+
+PRINT*, 'Inserisci indice spettrale medio (senza segno -)'
+READ(*,*) alpha
+
+PRINT*, 'Errore?'
+READ(*,*) deltaalpha
+
+PRINT*, 'Inserisci flusso in mJy'
+READ(*,*) S
+
+PRINT*, 'Errore?'
+READ(*,*) deltaflux
+
+PRINT*, 'Inserisci frequenza corrispondente in Hz'
+READ(*,*) freq
+
+PRINT*, 'Inserisci asse maggiore in kpc'
+READ(*,*) a
+
+PRINT*, 'Errore?'
+READ(*,*) deltaa
+
+PRINT*, 'Inserisci asse minore in kpc'
+READ(*,*) b
+
+PRINT*, 'Errore?'
+READ(*,*) deltab
+
+10 PRINT*, "Digita 1 per elissoide oblato (asse c=asse maggiore), 2 per prolato (asse c=asse minore)"
+ READ(*,*) ans
+
+IF(ans==1) THEN 
+  c=a
+  deltac=deltaa
+ELSE IF(ans==2) THEN
+  c=b
+  deltac=deltab
+ ELSE 
+  PRINT*, 'Digita 1 o 2'
+  PRINT*, '            '
+  GO TO 10
+  END IF
+
+L=4*pi*(D_L**2)*(S*1e-26)*((1+z)**(alpha-1))
+
+bright=4*(S*1e-26)*(D_L**2)/(pi*(a*3e+21)*(b*3e+21))
+
+T=bright*(1/(2*k))*((ccost**2)/(freq**2))
+
+V=(1./6.)*pi*(a*3e+21)*(b*3e+21)*(c*3e+21)/(27d63)
+
+E=2d41*((L/1e7)**(4./7.))*(V**(3./7.))
+
+epsilon=E/(V*27d63)
+
+H=((24./7.)*pi*epsilon)**(1./2.)
+
+
+!Errori
+deltaL=L*((((deltaflux/S)**2)+((log10(1+z)*(log10(1+z)))*deltaalpha**2))**0.5)
+
+deltabright=((((4*(D_L**2))/(pi*(a*3e+21)*(b*3e+21)))**2)*((deltaflux*1e-26)**2)+ & 
+((((-4*(S*1e-26)*D_L**2)/(pi*((a*3e+21)**2)*(b*3e+21)))**2)*((deltaa*3e+21)**2)) + &
+((((-4*(S*1e-26)*D_L**2)/(pi*(a*3e+21)*((b*3e+21)**2)))**2)*((deltab*3e+21)**2)))**0.5
+
+deltaT=((((1/(2*k))*((ccost**2)/(freq**2)))**2)*deltabright**2)**0.5
+
+deltaV=((4/3)*pi)*(((((b/2)*(c/2)**2)*((deltaa/2)**2)) + &
+((((a/2)*(b/2)**2)*((deltac/2)**2))) + ((((a/2)*(c/2)**2)*((deltab/2)**2))))**0.5)
+
+deltaE=(2d+41)*((((((4./7.)*((L/1e+7)**(-3./7.))*(V**(3./7.)))**2)*((deltaL/1e+7)**2)) + &
+((((3./7.)*((L/1e+7)**(4./7.))*(V**(-4./7.)))**2)*(deltaV**2)))**0.5)
+
+deltaepsilon=(((deltaE/(V*27d63))**2)+((-E/(((V*27d63)**2)))**2)*((deltaV*27d63)**2))**0.5
+
+deltaH=(((12./7.)*pi*epsilon)**(-0.5))*deltaepsilon
+
+
+PRINT*, '                                                                      '
+PRINT*, '######################################################################'
+PRINT*, '####################          RISULTATI           ####################'
+PRINT*, '######################################################################'
+PRINT*, '                                                                      '
+
+WRITE(*,'(A,E10.3,A)'), "La luminosita' e'", L, " erg/s*Hz"
+WRITE(*,'(A,E10.3,A)'), "L'errore sulla luminosita' e'", deltaL, " erg/s*Hz"
+WRITE(*,'(A,E10.3,A)'), "La brillanza e'", bright/(1e-23), " Jy"
+WRITE(*,'(A,E10.3,A)'), "L'errore sulla brillanza e'", deltabright/(1e-23), " Jy"
+WRITE(*,'(A,F10.2,A)'), "La temperatura di Brillanza e'", T, " K"
+WRITE(*,'(A,F10.2,A)'), "L'errore sulla temperatura di Brillanza e'", deltaT, " K"
+WRITE(*,'(A,F10.2,A)'), "Il volume e'", V, " kpc3"
+WRITE(*,'(A,F10.2,A)'), "L'errore sul volume e'",deltaV, " kpc3"
+WRITE(*,'(A,E10.3,A)'), "L'energia totale e'", E, " erg"
+WRITE(*,'(A,E10.3,A)'), "L'errore sull'energia totale e'", deltaE, " erg"
+WRITE(*,'(A,E10.3,A)'), "La densita di energia e'", epsilon, " erg/cm3"
+WRITE(*,'(A,E10.3,A)'), "L'errore sulla densita di energia e'", deltaepsilon, " erg/cm3"
+WRITE(*,'(A,F10.2,A)'), "Il campo magnetico di equipartizione e'", H/(1e-6), " microgauss"
+WRITE(*,'(A,F10.2,A)'), "L'errore sul campo magnetico di equipartizione e'", &
+ deltaH/(1e-6), " microgauss"
+
+
+PRINT*, '                                                                      '
+PRINT*, '#######################################################################'
+PRINT*, '                                                                      '
+
+
+
+END PROGRAM calcoliradio

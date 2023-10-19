@@ -1,0 +1,43 @@
+PROGRAM err_dens
+IMPLICIT NONE
+INTEGER:: ndati, i
+REAL*8, ALLOCATABLE:: ktsu(:), ktgiu(:), kt(:), nsu(:), ngiu(:), n(:)
+REAL*8, ALLOCATABLE:: pressure(:), errsu(:), errgiu(:), relsukt(:), relgiukt(:)
+REAL*8, ALLOCATABLE:: relsun(:), relgiun(:)
+
+OPEN(10, file='datipress.dat')
+
+ i=0
+
+      DO
+        READ(10,*,end=100)
+        i=i+1
+      END DO
+
+      100 CONTINUE
+      ndati=i
+
+ALLOCATE(ktsu(ndati), ktgiu(ndati), kt(ndati), nsu(ndati), ngiu(ndati), n(ndati), pressure(ndati), errsu(ndati), errgiu(ndati))
+ALLOCATE(relsukt(ndati), relgiukt(ndati), relsun(ndati), relgiun(ndati))
+
+REWIND(10)
+
+OPEN(5, file='Res_pressure.dat')
+
+DO i=1, ndati
+  READ(10,*) ktsu(i), ktgiu(i), kt(i), nsu(i), ngiu(i), n(i), pressure(i)
+  
+  relsukt(i)=ktsu(i)/kt(i)
+  relgiukt(i)=ktgiu(i)/kt(i)
+  relsun(i)=nsu(i)/n(i)
+  relgiun(i)=ngiu(i)/n(i)
+
+ errsu(i)=(relsukt(i)+relsun(i))*pressure(i)
+ errgiu(i)=(relgiukt(i)+relgiun(i))*pressure(i)
+
+WRITE(5,*) errsu(i), errgiu(i)
+
+END DO
+
+
+END PROGRAM err_dens

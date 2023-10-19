@@ -1,0 +1,12 @@
+Stacking/
+*.txt
+*.pdf
+CSCview
+UL-CALC-master*
+WebPlotDigitizer*
+pando/
+VLAreduction/
+Scriptimaging_XMM/
+Selfcal/
+.DS_Store
+.idea
