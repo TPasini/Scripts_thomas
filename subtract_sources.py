@@ -62,11 +62,11 @@ def adjustniter_for_taper(taper, niter):
     return int(niter/4)
 
 
-def makeimage(mslist, imageout, pixsize, imsize, channelsout=6, niter=15000, robust=-0.5, minuv=80, uvtaper=None, multiscale=False, predict=True,fitsmask=None, deepmultiscale=False, cluster_redshift=None, column=None, log='wscleanlog'):
+def makeimage(mslist, imageout, pixsize, imsize, channelsout=6, niter=15000, robust=-0.5, minuv=80, uvtaper=None, multiscale=False, predict=True,fitsmask=None, deepmultiscale=False, cluster_redshift=None, column=None, log='wscleanlog', concat_mss=False):
 
     wsclean = 'wsclean'
 
-    if predict == False and freq == 'LBA':
+    if predict == False and freq == 'LBA' and concat_mss == True:
         from LiLF import lib_ms
         from itertools import groupby
 
