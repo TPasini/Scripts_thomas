@@ -143,8 +143,6 @@ if os.path.exists(LBA_dir) and os.path.exists(HBA_dir):
     if not os.path.exists(f'{pathdir}/spidx'):
         os.makedirs(f'{pathdir}/spidx')
 
-os.chdir(f'{pathdir}')
-
 if do_HBA == False and do_LBA == False and do_GMRT == False:
     print(colored(f'No HBA, LBA or GMRT directories found in {pathdir}. Stopping...', 'red'))
     sys.exit()
@@ -499,7 +497,7 @@ if do_spidx == True:
         s.add(cmd_plot_spidxerr, log=splog, commandType="python")
         s.run()
 
-        cmd_spidx_sub = f'spidxmap_wuplims.py --size 0.65 --radec {ra} {dec} --noise --sigma 2.5 --fluxscaleerr 0.1 --beam 40 40 0 --output {pathdir}/spidx/{targetname}_spidx_sourcesub.fits ' \
+        cmd_spidx_sub = f'spidxmap_wuplims.py --size 0.65 --radec {ra} {dec} --noise --sigma 2.5 --fluxscaleerr 0.1 --beam 45 45 0 --output {pathdir}/spidx/{targetname}_spidx_sourcesub.fits ' \
                         f'{pathdir}/HBA/images/{targetname}_spidxSUB_HBA-MFS-image.fits {pathdir}/LBA/images/{targetname}_spidxSUB_LBA-MFS-image.fits'
         s.add(cmd_spidx_sub, log=splog, commandType="python")
         s.run()
@@ -514,7 +512,7 @@ if do_spidx == True:
         s.add(cmd_plot_spidxerr_sub, log=splog, commandType="python")
         s.run()
 
-        cmd_spidx_superlow_sub = f'spidxmap_wuplims.py --size 0.65 --radec {ra} {dec} --noise --sigma 2.5 --fluxscaleerr 0.1 --output {pathdir}/spidx/{targetname}_spidx_taper50kpc_sourcesub.fits ' \
+        cmd_spidx_superlow_sub = f'spidxmap_wuplims.py --size 0.65 --radec {ra} {dec} --noise --sigma 2.5 --fluxscaleerr 0.1 --beam 130 130 0 --output {pathdir}/spidx/{targetname}_spidx_taper50kpc_sourcesub.fits ' \
                                  f'{pathdir}/HBA/images/{targetname}_taper50kpc_spidxSUB_HBA-MFS-image.fits {pathdir}/LBA/images/{targetname}_taper50kpc_spidxSUB_LBA-MFS-image.fits'
         s.add(cmd_spidx_superlow_sub, log=splog, commandType="python")
         s.run()
@@ -531,7 +529,7 @@ if do_spidx == True:
 
 logger.info('Done.')
 
-logfile = sorted(glob.glob(f'{pathdir}/radio_workflow*.logger'))[-1]
+logfile = sorted(glob.glob(f'radio_workflow*.logger'))[-1]
 with open(logfile, 'r') as f:
     last_line = f.readlines()[-1]
     if not "Done" in last_line:
