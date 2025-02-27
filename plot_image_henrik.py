@@ -143,7 +143,7 @@ norm = ImageNormalize(data, vmin=float(int_min), vmax=float(int_max), stretch=st
 # bkgr image
 logging.info("Image...")
 if plottype in ['si','si+err']:
-    from colormap import *
+    #from colormap import *
     ul_mask = np.ones_like(data, dtype=int)
     ll_mask = np.ones_like(data, dtype=int)
     all_limit_mask = np.ones_like(data, dtype=int)
@@ -205,7 +205,7 @@ if args.evcc_cz:
 
 # add beam
 accentcolor = 'white' if args.type == 'stokes' else 'black'
-addBeam(ax, header, edgecolor=accentcolor)
+# addBeam(ax, header, edgecolor=accentcolor)
 
 logging.info("Refinements...")
 # grid - BUG with ndim images?

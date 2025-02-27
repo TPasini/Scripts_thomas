@@ -25,18 +25,19 @@ parser.add_argument('image', default=[], help='Fits image to plot.')
 parser.add_argument('--type', default='radio', help='radio/X')
 parser.add_argument('--cmap', default='gnuplot2', help='Colormap to use.')
 parser.add_argument('-z', '--z', type=float, help='Source redshift. Defaults to A1550.')
-parser.add_argument('--radec', dest='radec', nargs='+', type=float, help='RA/DEC where to center image in deg (if not given, get full extent.)')
+parser.add_argument('--radec', dest='radec', nargs=2, type=float, help='RA/DEC where to center image in deg (if not given, get full extent.)')
 parser.add_argument('-s', '--size', default=600, type=float, help='Size of the final image in arcsec. Default to 600 arcsec')
 parser.add_argument('-n', '--noise', type=float, help='Manually input noise (Jy/beam).')
 parser.add_argument('--show_beam', action='store_true', help='Show image beam.')
 parser.add_argument('--sbar', help='Length of size bar in kpc.')
 parser.add_argument('--show_scale', action='store_true', help='Show arcsec to kpc scale.')
 parser.add_argument('--show_contours', action='store_true', help='Show image contours.')
-parser.add_argument('--interval', nargs='+', help='Manually input vmin and vmax.')
+parser.add_argument('--interval', nargs=2, help='Manually input vmin and vmax.')
 parser.add_argument('--stretch', default='linear', help='Stretch to apply to image. Default: linear.')
 parser.add_argument('--smooth', default=7, help='Smoothing to apply to the X-ray image. Default: 7')
 parser.add_argument('--region', nargs='+', help='DS9 region file to plot.')
 parser.add_argument('-o', '--outfile', default='plot', help='Prefix of output image.')
+parser.add_argument('--fix_figure', action='store_true', help='Fix fits file if too many axes.')
 
 
 def fix_aplpy_fits(aplpy_obj, dropaxis=2):
@@ -69,12 +70,14 @@ output = args.outfile
 interval = args.interval
 imstretch = args.stretch
 imsmooth = args.smooth
+fix_figure = args.fix_figure
 
 
 f = aplpy.FITSFigure(filename)
 
 if plottype=='radio':
-    fix_aplpy_fits(f)
+    if fix_figure:
+        fix_aplpy_fits(f)
     f.recenter(center[0], center[1], radius=(size/3600.))
     if interval:
         if imstretch != 'log':

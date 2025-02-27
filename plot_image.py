@@ -161,7 +161,7 @@ norm = ImageNormalize(data, vmin=float(int_min), vmax=float(int_max), stretch=st
 # bkgr image
 logging.info("Image...")
 if plottype in ['si','si+err']:
-    from colormaps import *
+    #from colormaps import *
     ul_mask = np.ones_like(data, dtype=int)
     ll_mask = np.ones_like(data, dtype=int)
     all_limit_mask = np.ones_like(data, dtype=int)
@@ -234,7 +234,7 @@ if args.cat:
     ax.scatter(cra, cdec, marker='x', c='red', lw=1, transform=ax.get_transform('world'))
 
 # add beam
-addBeam(ax, header, edgecolor=accentcolor)
+#addBeam(ax, header, edgecolor=accentcolor)
 
 logging.info("Refinements...")
 # grid - BUG with ndim images?
@@ -246,7 +246,7 @@ if show_cbar:
     if args.cbar_vertical:
         addCbar(fig, plottype, im, header, float(int_min), float(int_max), fontsize=fontsize+1,cbanchor=[0.772, 0.11, 0.03, 0.77], orientation='vertical')
     else:
-        addCbar(fig, plottype, im, header, float(int_min), float(int_max), fontsize=fontsize+1, labelshift=4)
+        addCbar(fig, plottype, im, header, float(int_max), fontsize=fontsize+1, labelshift=4)
 
 # scalebar
 if show_scalebar:

@@ -100,7 +100,7 @@ if os.path.exists(LBA_dir):
     if not os.path.exists(f'{pathdir}/LBA/logs'):
         os.makedirs(f'{pathdir}/LBA/logs')
     if args.dosourcesub == True:
-        with w.if_todo(f'subtraction_LBA'):
+        with w.if_todo(f'subtraction_LBA_{targetname}'):
             if not os.path.exists(f'{pathdir}/LBA/subtraction'):
                 os.makedirs(f'{pathdir}/LBA/subtraction')
             logger.info('Performing LBA compact-sources subtraction...')
@@ -127,7 +127,7 @@ if os.path.exists(HBA_dir):
     if not os.path.exists(f'{pathdir}/HBA/logs'):
         os.makedirs(f'{pathdir}/HBA/logs')
     if args.dosourcesub == True:
-        with w.if_todo(f'subtraction_HBA'):
+        with w.if_todo(f'subtraction_HBA_{targetname}'):
             if not os.path.exists(f'{pathdir}/HBA/subtraction'):
                 os.makedirs(f'{pathdir}/HBA/subtraction')
             logger.info('Performing HBA compact-sources subtraction...')
