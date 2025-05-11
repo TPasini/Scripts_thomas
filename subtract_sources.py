@@ -62,11 +62,11 @@ def adjustniter_for_taper(taper, niter):
     return int(niter/4)
 
 
-def makeimage(mslist, imageout, pixsize, imsize, channelsout=6, niter=15000, robust=-0.5, minuv=80, uvtaper=None, multiscale=False, predict=True,fitsmask=None, deepmultiscale=False, cluster_redshift=None, column=None, log='wscleanlog', concat_mss=False):
+def makeimage(mslist, imageout, pixsize, imsize, channelsout=6, niter=15000, robust=-0.5, minuv=80, uvtaper=None, multiscale=False, predict=True,fitsmask=None, deepmultiscale=False, cluster_redshift=None, column=None, log='wscleanlog'):
 
     wsclean = 'wsclean'
 
-    if predict == False and freq == 'LBA' and concat_mss == True:
+    if predict == False and freq == 'LBA':
         from LiLF import lib_ms
         from itertools import groupby
 
@@ -193,15 +193,15 @@ def makeimage(mslist, imageout, pixsize, imsize, channelsout=6, niter=15000, rob
 
 def subtractcompact(mslist, imageout, pixsize, imsize, minuv, channelsout=6, niter=15000, robust=-0.5, outcolumn='DIFFUSE_SUB'):
 
-    makemask = 'MakeMask.py'
+    makemask = 'make_mask.py'
      
     makeimage(mslist, imageout +'_compact', pixsize, imsize, channelsout=channelsout, niter=niter, robust=robust, minuv=minuv, predict=False)
 
    # make a mask
     imagename  = imageout +'_compact' + '-MFS-image.fits'
-    cmdm  = makemask + ' --Th=2.0 --RestoredIm=' + imagename
+    cmdm  = makemask + ' ' + imagename
     os.system(cmdm)
-    fitsmask = imagename + '.mask.fits'
+    fitsmask = imagename + '.newmask'
 
    # re-image with mask
     makeimage(mslist, imageout +'_compactmask', pixsize, imsize, channelsout=channelsout, niter=niter, robust=-0.5, minuv=minuv, multiscale=True, predict=True, fitsmask=fitsmask, deepmultiscale=False)
@@ -233,8 +233,7 @@ def subtractcompact(mslist, imageout, pixsize, imsize, minuv, channelsout=6, nit
     return
 
 
-makemask = 'MakeMask.py'
-
+makemask = 'make_mask.py'
 
 parser = argparse.ArgumentParser(description='Make images from extraction run.')
 parser.add_argument('-b','--boxfile', help='optional boxfile to set imsize automatically', type=str)
@@ -250,7 +249,7 @@ parser.add_argument('--pixelscale', help='pixels size in arcsec, deafult=1.5', d
 parser.add_argument('--sourceLLS', help='size in Mpc of diffuse emission for uvcut, default=0.4', default=0.4, type=float)
 parser.add_argument('--z', help='redshift of cluster, not required if --nodosub is used', default=-1.0, type=float)
 parser.add_argument('-i','--imagename', help='imagename', default='image', required=True, type=str)
-parser.add_argument('--maskthreshold', help='threshold for MakeMask.py, default=3.0', default=3.0, type=int)
+parser.add_argument('--maskthreshold', help='Pixel threshold for make_mask.py, default=5.0', default=5.0, type=float)
 parser.add_argument('ms', nargs='*', help='msfile(s)')
 
 args = vars(parser.parse_args())
@@ -323,10 +322,10 @@ if not args['nodosub']:
 
     # make a mask
     imagename  = imageout +f'_subROBUST-0.5TAPER50kpc_{freq}' + '-MFS-image.fits'
-    cmdm  = makemask + ' --Th='+ str(args['maskthreshold']) + ' --RestoredIm=' + imagename
+    cmdm  = makemask + ' ' + imagename
     print('Producing source-subtracted image tapered at 50 kpc...')
     os.system(cmdm)
-    fitsmask = imagename + '.mask.fits'
+    fitsmask = imagename + '.newmask'
 
     # re-image with mask
     makeimage(mslist, imageout +f'_masksubROBUST-0.5TAPER50kpc_{freq}', pixsize, imsize, channelsout=args['channelsout'],
@@ -344,10 +343,10 @@ if not args['nodosub']:
 
     # make a mask
     imagename = imageout + f'_subROBUST-0.5TAPER100kpc_{freq}' + '-MFS-image.fits'
-    cmdm = makemask + ' --Th=' + str(args['maskthreshold']) + ' --RestoredIm=' + imagename
+    cmdm = makemask + ' ' + imagename
     print('Producing source-subtracted image tapered at 100 kpc...')
     os.system(cmdm)
-    fitsmask = imagename + '.mask.fits'
+    fitsmask = imagename + '.newmask'
 
     # re-image with mask
     makeimage(mslist, imageout + f'_masksubROBUST-0.5TAPER100kpc_{freq}', pixsize, imsize, channelsout=args['channelsout'],
@@ -365,10 +364,10 @@ if not args['nodosub']:
 
     # make a mask
     imagename = imageout + f'_subROBUST-0.5TAPER150kpc_{freq}' + '-MFS-image.fits'
-    cmdm = makemask + ' --Th=' + str(args['maskthreshold']) + ' --RestoredIm=' + imagename
+    cmdm = makemask + ' ' + imagename
     print('Producing source-subtracted image tapered at 150 kpc...')
     os.system(cmdm)
-    fitsmask = imagename + '.mask.fits'
+    fitsmask = imagename + '.newmask'
 
     # re-image with mask
     makeimage(mslist, imageout + f'_masksubROBUST-0.5TAPER150kpc_{freq}', pixsize, imsize, channelsout=args['channelsout'],
@@ -387,10 +386,10 @@ if not args['nodosub']:
 
     # make a mask
     imagename = imageout + f'_subROBUST-0.5TAPER90_{freq}' + '-MFS-image.fits'
-    cmdm = makemask + ' --Th=' + str(args['maskthreshold']) + ' --RestoredIm=' + imagename
+    cmdm = makemask + ' ' + imagename
     print('Producing source-subtracted image tapered at 90 arcsec...')
     os.system(cmdm)
-    fitsmask = imagename + '.mask.fits'
+    fitsmask = imagename + '.newmask'
 
     # re-image with mask
     makeimage(mslist, imageout + f'_masksubROBUST-0.5TAPER90_{freq}', 18, 2000, channelsout=args['channelsout'],
@@ -409,10 +408,10 @@ if (not args['onlydosub'] == True) and (args['z'] >0.): # otherwise cannot compu
 
     # make a mask
     imagename  = imageout +  f'_ROBUST-0.5TAPER50kpc_{freq}' +'-MFS-image.fits'
-    cmdm  = makemask + ' --Th='+ str(args['maskthreshold']) + ' --RestoredIm=' + imagename
+    cmdm  = makemask + ' ' + imagename
     print(cmdm)
     os.system(cmdm)
-    fitsmask = imagename + '.mask.fits'
+    fitsmask = imagename + '.newmask'
 
     # re-image with mask
     makeimage(mslist, imageout +f'_maskROBUST-0.5TAPER50kpc_{freq}', pixsize, imsize, channelsout=args['channelsout'], niter=adjustniter_for_taper(compute_taper(args['z'],50.), niter), robust=-0.5, minuv=minuv, multiscale=True, predict=False, fitsmask=fitsmask, deepmultiscale=False,uvtaper=compute_taper(args['z'],50.))
