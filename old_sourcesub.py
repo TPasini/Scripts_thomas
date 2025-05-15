@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import matplotlib
 matplotlib.use('Agg')
@@ -10,6 +10,7 @@ import os.path
 import pyregion
 import argparse
 from astropy.cosmology import FlatLambdaCDM
+from LiLF import lib_img
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 
 def cleanup():
@@ -65,27 +66,6 @@ def adjustniter_for_taper(taper, niter):
 def makeimage(mslist, imageout, pixsize, imsize, channelsout=6, niter=15000, robust=-0.5, minuv=80, uvtaper=None, multiscale=False, predict=True,fitsmask=None, deepmultiscale=False, cluster_redshift=None, column=None, log='wscleanlog'):
 
     wsclean = 'wsclean'
-
-    if predict == False and freq == 'LBA':
-        from LiLF import lib_ms
-        from itertools import groupby
-
-        keyfunct = lambda x: ' '.join(sorted(lib_ms.MS(x).getAntennas()))
-        MSs_list = sorted(mslist, key=keyfunct)  # needs to be sorted
-        groups = []
-        for k, g in groupby(MSs_list, keyfunct):
-            groups.append(list(g))
-        print(f"Found {len(groups)} groups of datasets with same antennas.")
-        for i, group in enumerate(groups, start=1):
-            antennas = ', '.join(lib_ms.MS(group[0]).getAntennas())
-            print(f"WSClean MS group {i}: {group}")
-            print(f"List of antennas: {antennas}")
-
-        MSs_files_clean = []
-        for g, group in enumerate(groups):
-            os.system(f'taql select from {group} giving wsclean_concat_{g}.MS as plain')
-            MSs_files_clean.append(f'wsclean_concat_{g}.MS')
-        mslist = MSs_files_clean#' '.join(MSs_files_clean)
 
     if uvtaper != None:
        if uvtaper < 0:
@@ -196,14 +176,17 @@ def subtractcompact(mslist, imageout, pixsize, imsize, minuv, channelsout=6, nit
     makemask = 'make_mask.py'
      
     makeimage(mslist, imageout +'_compact', pixsize, imsize, channelsout=channelsout, niter=niter, robust=robust, minuv=minuv, predict=False)
+    print('Compact image done...')
 
    # make a mask
     imagename  = imageout +'_compact' + '-MFS-image.fits'
     cmdm  = makemask + ' ' + imagename
+    print(f'Doing {cmdm}...')
     os.system(cmdm)
     fitsmask = imagename + '.newmask'
 
    # re-image with mask
+    print(f'Producing image with mask...')
     makeimage(mslist, imageout +'_compactmask', pixsize, imsize, channelsout=channelsout, niter=niter, robust=-0.5, minuv=minuv, multiscale=True, predict=True, fitsmask=fitsmask, deepmultiscale=False)
     
    # now subtract the columns 
@@ -309,6 +292,7 @@ if not args['nodosub']:
 
     minuv_forsub = compute_uvmin(args['z'], sourceLLS=args['sourceLLS'])
 
+    print('Subtracting sources...')
     subtractcompact(mslist, imageout, pixsize, imsize, minuv_forsub, channelsout=args['channelsout'],\
                   niter=int(niter/1.25), robust=-0.5, outcolumn='DIFFUSE_SUB')
 
@@ -316,15 +300,19 @@ if not args['nodosub']:
     #  --- make the taper 50 kpc image, compact source subtracted ----
     #  -----------------------------------------------------------------
 
+    print('Producing source-subtracted 50 kpc tapered image...')
     makeimage(mslist, imageout +f'_subROBUST-0.5TAPER50kpc_{freq}', pixsize, imsize, channelsout=args['channelsout'],
               niter=adjustniter_for_taper(compute_taper(args['z'],50.), niter), robust=-0.5, minuv=minuv, predict=False,
               column='DIFFUSE_SUB', uvtaper=compute_taper(args['z'],50.))
 
     # make a mask
     imagename  = imageout +f'_subROBUST-0.5TAPER50kpc_{freq}' + '-MFS-image.fits'
-    cmdm  = makemask + ' ' + imagename
-    print('Producing source-subtracted image tapered at 50 kpc...')
-    os.system(cmdm)
+    image_50kpc = lib_img.Image(imagename)
+    image_50kpc.makeMask(threshpix=5, atrous_do=True, maskname=imagename + '.newmask')
+    # cmdm  = makemask + ' ' + imagename
+    # os.system(cmdm)
+    # print(f'Running {cmdm}')
+    sys.exit()
     fitsmask = imagename + '.newmask'
 
     # re-image with mask
