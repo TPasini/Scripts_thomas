@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys, os
+import sys
 import numpy as np
 import argparse
 import logging
@@ -59,15 +59,19 @@ else:
 # stretch type (only stokes) 'log' (for extended) or 'sqrt' (for compact)
 stretch_type = args.stretch
 # Style
-fontsize = 14
+fontsize = 18
 # Scalebar
 show_scalebar = not args.no_sbar
 if show_scalebar:
     z = args.redshift
 kpc = args.sbar_kpc # how many kpc is the scalebar?
-accentcolor = 'black'
 # plt.style.use('dark_background')
-# accentcolor = 'white' if args.type == 'stokes' else 'black'
+# plt.rcParams.update({
+#     "figure.facecolor":  (0.0, 0.0, 0.0, 0.0),
+#     "axes.facecolor":    (0.0, 0.0, 0.0, 1.0),
+#     "savefig.facecolor": (0.0, 0.0, 0.0, 0.0)
+# })
+accentcolor = 'white' if args.type == 'stokes' else 'black'
 
 show_cbar = not args.no_cbar
 show_grid = args.show_grid
@@ -156,12 +160,14 @@ else:
         int_min, int_max = interval.get_limits(data_visible)
 
 logging.info('min: {},  max: {}'.format(int_min,int_max))
-norm = ImageNormalize(data, vmin=float(int_min), vmax=float(int_max), stretch=stretch)
+norm = ImageNormalize(data, vmin=float(int_min), vmax=float(int_max), stretch=stretch)#, clip=True)
 
 # bkgr image
 logging.info("Image...")
 if plottype in ['si','si+err']:
-    #from colormaps import *
+    # from colormaps import *
+    import nmmn.plots
+    turbo = nmmn.plots.turbocmap()  # Turbo
     ul_mask = np.ones_like(data, dtype=int)
     ll_mask = np.ones_like(data, dtype=int)
     all_limit_mask = np.ones_like(data, dtype=int)
@@ -178,15 +184,14 @@ if plottype in ['si','si+err']:
     ll_mask[np.isnan(data)] = -1
     all_limit_mask[np.isnan(data)] = -1
     if plottype == 'si':
-        im = ax.imshow(data, origin='lower', interpolation='nearest', cmap='turbo', norm=norm)
+        im = ax.imshow(data, origin='lower', interpolation='nearest', cmap=turbo, norm=norm)
     elif plottype == 'si+err':
         low_cut = np.percentile(data_alpha[~np.isnan(data_alpha)], 15)
         data_alpha[data_alpha < low_cut] = low_cut
         alpha = 0.7 * (np.nanmin(data_alpha)/data_alpha)**2 + 0.3
         alpha[np.isnan(alpha)] = 0.3
-        print(alpha.shape, data.shape)
-        im = ax.imshow(data, alpha=alpha, origin='lower', interpolation='nearest', cmap='turbo', norm=norm)
-        ax.contour(all_limit_mask, levels=[0.5], linewidths=0.5, colors=('black',), antialiased=True)
+        im = ax.imshow(data, alpha=alpha, origin='lower', interpolation='nearest', cmap=turbo, norm=norm)
+        ax.contour(all_limit_mask, levels=[0.5], linewidths=0.5, colors=(accentcolor), antialiased=True)
     # ax.contourf(all_limit_mask, alpha=0.5, color='white', colors=('white',), levels=[-0.5,0.5], antialiased=True) # this was used to shade UL and LL
     if np.any(ul_mask == 0): # only if we have any upper limits
         matplotlib.hatch._hatch_types.append(ArrowHatch)
@@ -206,19 +211,16 @@ else:
     # im = ax.imshow(data, origin='lower', interpolation='nearest', cmap='Oranges_r', norm=norm)
     # im = ax.imshow(data, origin='lower', interpolation='nearest', cmap='uhh_b', norm=norm)
     # im = ax.imshow(data, origin='lower', interpolation='nearest', cmap='YlOrRd_r', norm=norm)
-    # im = ax.imshow(data, origin='lower', interpolation='nearest', cmap='cubehelix', norm=norm) # Try YlOrRed,
+    im = ax.imshow(data, origin='lower', interpolation='nearest', cmap='cubehelix', norm=norm) # Try YlOrRed,
     # im = ax.imshow(data, origin='lower', interpolation='nearest', cmap='Blues_r', norm=norm) # Try YlOrRed,
     # im = ax.imshow(data, origin='lower', interpolation='nearest', cmap='magma', norm=norm) # Try YlOrRed,
-    im = ax.imshow(data, origin='lower', interpolation='nearest', cmap='magma', norm=norm) # Try YlOrRed,
 
 # contours
 if show_contours:
-    sigma=img.calc_noise()
-    sigma=0.8
     print("Contour...")
     contour_limits = contout_base_sigma * 2**np.arange(n_contour) * sigma
-    ax.contour(data, transform=ax.get_transform(WCS(header)),linewdiths=0.1, levels=contour_limits, colors='black', alpha=0.7) #grey
-    ax.contour(data, transform=ax.get_transform(WCS(header)),linewdiths=0.1, levels=-contour_limits[::-1], colors='black', alpha=0.7, linestyles='dashed') # grey
+    ax.contour(data, transform=ax.get_transform(WCS(header)),linewdiths=0.1, levels=contour_limits, colors='white', alpha=0.7) #grey
+    ax.contour(data, transform=ax.get_transform(WCS(header)),linewdiths=0.1, levels=-contour_limits[::-1], colors='white', alpha=0.7, linestyles='dashed') # grey
 
 # EVCC catalogue
 if args.cat:
@@ -234,7 +236,7 @@ if args.cat:
     ax.scatter(cra, cdec, marker='x', c='red', lw=1, transform=ax.get_transform('world'))
 
 # add beam
-#addBeam(ax, header, edgecolor=accentcolor)
+addBeam(ax, img.img_hdr, edgecolor=accentcolor)
 
 logging.info("Refinements...")
 # grid - BUG with ndim images?
@@ -243,10 +245,12 @@ if show_grid:
 
 # colorbar
 if show_cbar:
+    im.set_clim(vmax=int_max, vmin=int_min)
     if args.cbar_vertical:
-        addCbar(fig, plottype, im, header, float(int_min), float(int_max), fontsize=fontsize+1,cbanchor=[0.772, 0.11, 0.03, 0.77], orientation='vertical')
+        # addCbar(fig, plottype, im, header, float(int_min), float(int_max), fontsize=fontsize+1,cbanchor=[0.772, 0.11, 0.03, 0.77], orientation='vertical')
+        addCbar(fig, plottype, im, header, float(int_min), float(int_max), fontsize=fontsize+1, labelshift=0, cbanchor=[0.872, 0.11, 0.03, 0.77], orientation='vertical')
     else:
-        addCbar(fig, plottype, im, header, float(int_max), fontsize=fontsize+1, labelshift=4)
+        addCbar(fig, plottype, im, header, float(int_min), float(int_max), fontsize=fontsize+1, labelshift=0)
 
 # scalebar
 if show_scalebar:
@@ -284,16 +288,21 @@ if show_axes:
     lat.set_major_formatter('dd:mm')
     lat.set_ticklabel(rotation=90) # to turn dec vertical
 else:
-    ax.axis('off')
+    # Hide X and Y axes label marks
+    for axis in lon, lat:
+        axis.set_ticklabel_visible(False)
+        axis.set_ticks_visible(False)
+    # hide x and y axes tick marks
+    # ax.axis('off')
 
 try:
     if np.any(all_limit_mask == 0):  # only if we have any upper limits
         import matplotlib.patches as mpatches
         handles = []
         if np.any(ul_mask == 0):  # only if we have any upper limits
-            handles.append(mpatches.Patch( facecolor='k', hatch=r'arr{270}{9}{2}', label='Upper limits', fill=False))
+            handles.append(mpatches.Patch( facecolor=accentcolor, hatch=r'arr{270}{9}{2}', label='Upper limits', fill=False))
         if np.any(ll_mask == 0):  # only if we have any upper limits
-            handles.append(mpatches.Patch( facecolor='k', hatch=r'arr{90}{9}{2}', label='Lower limits', fill=False))
+            handles.append(mpatches.Patch( facecolor=accentcolor, hatch=r'arr{90}{9}{2}', label='Lower limits', fill=False))
         legend = ax.legend(handles = handles, loc=2, fontsize=fontsize, handleheight=1.5)
 except NameError:
     pass
