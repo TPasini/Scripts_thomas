@@ -159,14 +159,13 @@ else:
     print(colored('ERROR:', 'red'), 'Plottype unrecognized.')
     sys.exit()
 
-
 if scale:
     if not z:
         print(colored('ERROR:', 'red'), 'Redshift needed to plot scale.')
         sys.exit()
-    arcsec_to_kpc = cosmo.kpc_proper_per_arcmin(z).value/60
-    text=str(arcsec_to_kpc)[:4]
-    f.add_label(0.5,0.97, " 1'' / "+text+" kpc",relative=True, bbox=dict(facecolor='white', edgecolor='black',  pad=5.0))
+    arcsec_to_kpc = cosmo.kpc_proper_per_arcmin(z).value / 60
+    text = f"{arcsec_to_kpc:.2f}"
+    f.add_label(0.5, 0.97, "1'' / " + text + " kpc", relative=True, size=20, bbox=dict(facecolor='white', edgecolor='black', pad=5.0))
 
 if sbar:
     if not z:
