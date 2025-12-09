@@ -10,13 +10,11 @@ from astropy.wcs import WCS
 from astropy.cosmology import FlatLambdaCDM
 from lib_fits import flatten
 import argparse
-import logging
 import warnings
 import lib_log
 from termcolor import colored
 
 logger = lib_log.logger
-#logger_obj = lib_log.Logger('plotting.logger')
 
 warnings.filterwarnings("ignore")
 
@@ -48,9 +46,15 @@ def fix_aplpy_fits(aplpy_obj, dropaxis=2):
 
 args = parser.parse_args()
 
-if args.radec == None:
-    print(colored('ERROR:', 'red'), 'No input coordinates.')
-    sys.exit()
+if args.radec is None:
+    logger.info('No RA/DEC provided: using FITS center')
+    with fits.open(args.image) as hdul:
+        wcs = WCS(hdul[0].header)
+        ny, nx = hdul[0].data.shape[-2:]
+        ra_c, dec_c = wcs.wcs_pix2world(nx/2, ny/2, 0)
+    center = [ra_c, dec_c]
+else:
+    center = args.radec
 
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 
@@ -59,7 +63,6 @@ regions = args.region
 z = args.z
 plottype = args.type
 plotcmap = args.cmap
-center = args.radec
 noise = args.noise
 size = args.size
 beam = args.show_beam
