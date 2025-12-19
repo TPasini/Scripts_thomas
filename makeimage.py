@@ -46,16 +46,6 @@ def fix_aplpy_fits(aplpy_obj, dropaxis=2):
 
 args = parser.parse_args()
 
-if args.radec is None:
-    logger.info('No RA/DEC provided: using FITS center')
-    with fits.open(args.image) as hdul:
-        wcs = WCS(hdul[0].header)
-        ny, nx = hdul[0].data.shape[-2:]
-        ra_c, dec_c = wcs.wcs_pix2world(nx/2, ny/2, 0)
-    center = [ra_c, dec_c]
-else:
-    center = args.radec
-
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 
 filename = args.image
@@ -77,6 +67,16 @@ fix_figure = args.fix_figure
 
 
 f = aplpy.FITSFigure(filename)
+
+if args.radec is None:
+    logger.info('No RA/DEC provided: using FITS center')
+    with fits.open(args.image) as hdul:
+        wcs = WCS(hdul[0].header)
+        ny, nx = hdul[0].data.shape[-2:]
+        ra_c, dec_c = wcs.wcs_pix2world(nx/2, ny/2, 0)
+    center = [ra_c, dec_c]
+else:
+    center = args.radec
 
 if plottype=='radio':
     if fix_figure:
