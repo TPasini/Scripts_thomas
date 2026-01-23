@@ -13,6 +13,7 @@ import argparse
 import warnings
 import lib_log
 from termcolor import colored
+import matplotlib.pyplot as plt
 
 logger = lib_log.logger
 
@@ -30,12 +31,13 @@ parser.add_argument('--show_beam', action='store_true', help='Show image beam.')
 parser.add_argument('--sbar', help='Length of size bar in kpc.')
 parser.add_argument('--show_scale', action='store_true', help='Show arcsec to kpc scale.')
 parser.add_argument('--show_contours', action='store_true', help='Show image contours.')
-parser.add_argument('--interval', nargs=2, help='Manually input vmin and vmax.')
+parser.add_argument('--interval', nargs='+', help='Manually input vmin, vmax, [vmid for log].')
 parser.add_argument('--stretch', default='linear', help='Stretch to apply to image. Default: linear.')
 parser.add_argument('--smooth', default=7, help='Smoothing to apply to the X-ray image. Default: 7')
 parser.add_argument('--region', nargs='+', help='DS9 region file to plot.')
 parser.add_argument('-o', '--outfile', default='plot', help='Prefix of output image.')
 parser.add_argument('--fix_figure', action='store_true', help='Fix fits file if too many axes.')
+parser.add_argument('--contours_color', default='white', help='Contours color.')
 
 
 def fix_aplpy_fits(aplpy_obj, dropaxis=2):
@@ -64,7 +66,16 @@ interval = args.interval
 imstretch = args.stretch
 imsmooth = args.smooth
 fix_figure = args.fix_figure
+ctr_color = args.contours_color
 
+if plotcmap not in plt.colormaps():
+    from palettable import cubehelix
+    # Controlla se il nome esiste nel modulo cubehelix
+    if hasattr(cubehelix, plotcmap):
+        plotcmap = getattr(cubehelix, plotcmap).mpl_colormap
+        #logger.info(f"Usando la colormap di Palettable: {args.cmap}")
+    else:
+        logger.warning(f"Cmap '{plotcmap}' not found")
 
 f = aplpy.FITSFigure(filename)
 
@@ -139,7 +150,7 @@ if plottype=='radio':
         levels = np.array([3,6,12,24,48,96,192,384,768,1536,3072])
         levels = levels[:]*rms
         logger.info('Plotting contours..')
-        f.show_contour(levels=levels, colors='white', linewidths=0.6)
+        f.show_contour(levels=levels, colors=f'{ctr_color}', linewidths=0.6)
 
     if beam:
         f.add_beam()
@@ -168,7 +179,7 @@ if scale:
         sys.exit()
     arcsec_to_kpc = cosmo.kpc_proper_per_arcmin(z).value / 60
     text = f"{arcsec_to_kpc:.2f}"
-    f.add_label(0.5, 0.97, "1'' / " + text + " kpc", relative=True, size=20, bbox=dict(facecolor='white', edgecolor='black', pad=5.0))
+    f.add_label(0.5, 0.97, "1'' / " + text + " kpc", relative=True, size=20, bbox=dict(facecolor=f'{ctr_color}', edgecolor='black', pad=5.0))
 
 if sbar:
     if not z:
@@ -177,9 +188,9 @@ if sbar:
     bar_length = sbar
     arcsec_to_kpc = cosmo.kpc_proper_per_arcmin(z).value/60
     if float(bar_length) >= 1000:
-        f.add_scalebar((float(bar_length) / arcsec_to_kpc) / 3600, str(float(bar_length)/1000) + ' Mpc', color='white')
+        f.add_scalebar((float(bar_length) / arcsec_to_kpc) / 3600, str(float(bar_length)/1000) + ' Mpc', color=f'{ctr_color}')
     else:
-        f.add_scalebar((float(bar_length)/arcsec_to_kpc)/3600, bar_length+' kpc', color='white')
+        f.add_scalebar((float(bar_length)/arcsec_to_kpc)/3600, bar_length+' kpc', color=f'{ctr_color}')
     f.scalebar.set_font(size='xx-large')
 
 
