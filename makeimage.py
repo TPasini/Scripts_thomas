@@ -14,6 +14,7 @@ import warnings
 import lib_log
 from termcolor import colored
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 
 logger = lib_log.logger
 
@@ -38,6 +39,7 @@ parser.add_argument('--region', nargs='+', help='DS9 region file to plot.')
 parser.add_argument('-o', '--outfile', default='plot', help='Prefix of output image.')
 parser.add_argument('--fix_figure', action='store_true', help='Fix fits file if too many axes.')
 parser.add_argument('--contours_color', default='white', help='Contours color.')
+parser.add_argument('--cmap_type', default='sequential', choices=['sequential', 'qualitative'], help='Type of colormap to use')
 
 
 def fix_aplpy_fits(aplpy_obj, dropaxis=2):
@@ -68,14 +70,31 @@ imsmooth = args.smooth
 fix_figure = args.fix_figure
 ctr_color = args.contours_color
 
-if plotcmap not in plt.colormaps():
+if plotcmap in plt.colormaps():
+    base_cmap = plt.get_cmap(plotcmap)
+else:
     from palettable import cubehelix
-    # Controlla se il nome esiste nel modulo cubehelix
+    from palettable.colorbrewer import qualitative, sequential
+
     if hasattr(cubehelix, plotcmap):
-        plotcmap = getattr(cubehelix, plotcmap).mpl_colormap
-        #logger.info(f"Usando la colormap di Palettable: {args.cmap}")
+        obj = getattr(cubehelix, plotcmap)
+        base_cmap = obj.mpl_colormap
+    elif hasattr(sequential, plotcmap):
+        obj = getattr(sequential, plotcmap)
+        base_cmap = obj.mpl_colormap
+    elif hasattr(qualitative, plotcmap):
+        obj = getattr(qualitative, plotcmap)
+        base_cmap = ListedColormap(obj.mpl_colors)
     else:
-        logger.warning(f"Cmap '{plotcmap}' not found")
+        logger.warning(f"Cmap '{plotcmap}' not found anywhere")
+        base_cmap = plt.get_cmap('viridis')
+
+if args.cmap_type == 'qualitative':
+    colors = base_cmap(np.linspace(0, 1, 8))
+    plotcmap = ListedColormap(colors)
+else:
+    plotcmap = base_cmap
+
 
 f = aplpy.FITSFigure(filename)
 
