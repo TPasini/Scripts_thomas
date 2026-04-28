@@ -34,7 +34,7 @@ parser.add_argument('--show_beam', action='store_true', help='Show image beam.')
 parser.add_argument('--sbar', help='Length of size bar in kpc.')
 parser.add_argument('--show_scale', action='store_true', help='Show arcsec to kpc scale.')
 parser.add_argument('--show_contours', action='store_true', help='Show image contours.')
-parser.add_argument('--interval', nargs='+', help='Manually input vmin, vmax, [vmid for log].')
+parser.add_argument('--interval', nargs='+', help='Manually input vmin, vmax, [vmid for log stretch]. NOTE: for log stretch, vmid is the pivot of log(value - vmid) and must be LESS than vmin (e.g. a small negative number). If vmid >= vmin, it is auto-corrected.')
 parser.add_argument('--stretch', default='linear', help='Stretch to apply to image. Default: linear.')
 parser.add_argument('--smooth', default=7, help='Smoothing to apply to the X-ray image. Default: 7')
 parser.add_argument('--region', nargs='+', help='DS9 region file to plot.')
@@ -210,7 +210,21 @@ if plottype=='radio':
         if imstretch != 'log':
             f.show_colorscale(cmap=plotcmap, stretch=imstretch, vmin=float(scaled_interval[0]), vmax=float(scaled_interval[1]))
         else:
-            f.show_colorscale(cmap=plotcmap, stretch=imstretch, vmin=float(scaled_interval[0]), vmax=float(scaled_interval[1]), vmid=float(scaled_interval[2]))
+            vmin_l = float(scaled_interval[0])
+            vmax_l = float(scaled_interval[1])
+            # vmid must be strictly less than vmin for aplpy log stretch: log(value - vmid)
+            if len(scaled_interval) >= 3:
+                vmid_l = float(scaled_interval[2])
+            else:
+                vmid_l = vmin_l - abs(vmax_l - vmin_l) * 0.01
+            if vmid_l >= vmin_l:
+                vmid_auto = vmin_l - abs(vmax_l - vmin_l) * 0.01
+                logger.warning(f'Log stretch: vmid={vmid_l} >= vmin={vmin_l}. '
+                               f'Auto-correcting to vmid={vmid_auto:.4g} '
+                               f'(must be < vmin). Pass a negative vmid explicitly if needed.')
+                vmid_l = vmid_auto
+            f.show_colorscale(cmap=plotcmap, stretch=imstretch,
+                              vmin=vmin_l, vmax=vmax_l, vmid=vmid_l)
     else:
         f.show_colorscale(cmap=plotcmap, stretch=imstretch)
     # f.add_colorbar()
