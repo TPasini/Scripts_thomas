@@ -38,6 +38,7 @@ parser.add_argument('--interval', nargs='+', help='Manually input vmin, vmax, [v
 parser.add_argument('--stretch', default='linear', help='Stretch to apply to image. Default: linear.')
 parser.add_argument('--smooth', default=7, help='Smoothing to apply to the X-ray image. Default: 7')
 parser.add_argument('--region', nargs='+', help='DS9 region file to plot.')
+parser.add_argument('--region_color', default=None, help='Override color for all plotted regions (e.g. cyan, #ff0000). If not set, uses the color defined inside the .reg file.')
 parser.add_argument('-o', '--outfile', default='plot', help='Prefix of output image.')
 parser.add_argument('--fix_figure', action='store_true', help='Fix fits file if too many axes.')
 parser.add_argument('--contours_color', default='white', help='Contours color.')
@@ -471,9 +472,31 @@ if sbar:
 if regions is not None:
     if isinstance(regions, str):
         regions = [regions]
-    for region in regions:
+    for i, region in enumerate(regions):
         logger.info('Plotting regions..')
-        f.show_regions(region)
+        if args.region_color:
+            layer_name = f'region_{i}'
+            f.show_regions(region, layer=layer_name)
+            # recolor all artists in the newly added layer
+            try:
+                for key in (layer_name, layer_name + '_txt'):
+                    if key not in f._layers:
+                        continue
+                    artists = f._layers[key]
+                    if not hasattr(artists, '__iter__'):
+                        artists = [artists]
+                    for artist in artists:
+                        try:
+                            artist.set_edgecolor(args.region_color)
+                        except AttributeError:
+                            try:
+                                artist.set_color(args.region_color)
+                            except AttributeError:
+                                pass
+            except Exception as e:
+                logger.warning(f'Could not override region color: {e}')
+        else:
+            f.show_regions(region)
 
 f.ticks.set_color('white')
 f.ticks.set_linewidth(2)
