@@ -8,7 +8,10 @@ from LiLF import lib_util, lib_log, lib_ms
 import astropy.io.fits as pyfits
 from astropy.cosmology import FlatLambdaCDM
 from astropy.wcs import WCS
-from termcolor import colored
+def colored(text, color=None, **kwargs):
+    _codes = {'green': '\033[92m', 'red': '\033[91m', 'yellow': '\033[93m', 'blue': '\033[94m'}
+    _reset = '\033[0m'
+    return f"{_codes.get(color, '')}{text}{_reset if color in _codes else ''}"
 from lib_fits import flatten
 
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
@@ -104,7 +107,8 @@ if os.path.exists(LBA_dir):
             if not os.path.exists(f'{pathdir}/LBA/subtraction'):
                 os.makedirs(f'{pathdir}/LBA/subtraction')
             logger.info('Performing LBA compact-sources subtraction...')
-            subtract_LBA = f'subtract_sources.py --onlydosub -i {pathdir}/LBA/subtraction/{targetname}_forsubtract --imsize 1024 --z {redshift} --instr LBA {pathdir}/LBA/datasets/*MS*'
+            #subtract_LBA = f'subtract_sources.py --onlydosub -i {pathdir}/LBA/subtraction/{targetname}_forsubtract --imsize 1024 --z {redshift} --instr LBA {pathdir}/LBA/datasets/*MS*'
+            subtract_LBA = f'subtract_sources.py -i {pathdir}/LBA/subtraction/{targetname}_forsubtract --imsize 1024 -z {redshift} --instr LBA {pathdir}/LBA/datasets/*MS*'
             s.add(subtract_LBA, log='LBAsub.log', commandType="python")
             s.run()
             os.system(f'rm *.log')
@@ -123,7 +127,7 @@ if os.path.exists(HBA_dir):
         os.makedirs(f'{pathdir}/HBA/datasets')
         os.system(f'mv {pathdir}/HBA/*calibrated {pathdir}/HBA/datasets')
         os.system(f'mv {pathdir}/HBA/*archive* {pathdir}/HBA/datasets')
-    MSs_HBA = lib_ms.AllMSs(glob.glob(f'{pathdir}/HBA/datasets/*calibrated'),s) #+ glob.glob(f"{pathdir}/HBA/datasets/*archive*"), s)
+    MSs_HBA = lib_ms.AllMSs(glob.glob(f'{pathdir}/HBA/datasets/*calibrated') + glob.glob(f"{pathdir}/HBA/datasets/*archive*"), s)
     if not os.path.exists(f'{pathdir}/HBA/logs'):
         os.makedirs(f'{pathdir}/HBA/logs')
     if args.dosourcesub == True:
@@ -131,7 +135,8 @@ if os.path.exists(HBA_dir):
             if not os.path.exists(f'{pathdir}/HBA/subtraction'):
                 os.makedirs(f'{pathdir}/HBA/subtraction')
             logger.info('Performing HBA compact-sources subtraction...')
-            subtract_LBA = f'subtract_sources.py --onlydosub -i {pathdir}/HBA/subtraction/{targetname}_forsubtract --imsize 1024 --z {redshift} --instr HBA {pathdir}/HBA/datasets/*calibrated'
+            #subtract_LBA = f'subtract_sources.py --onlydosub -i {pathdir}/HBA/subtraction/{targetname}_forsubtract --imsize 1024 --z {redshift} --instr HBA {pathdir}/HBA/datasets/*calibrated'
+            subtract_LBA = f'sourcesub.py -i {pathdir}/HBA/subtraction/{targetname}_forsubtract --imsize 1024 -z {redshift} --instr HBA {pathdir}/HBA/datasets/*'
             s.add(subtract_LBA, log='HBAsub.log', commandType="python")
             s.run()
             os.system(f'rm *.log')
@@ -169,95 +174,97 @@ if do_HBA == True:
                              name=f'{pathdir}/HBA/images/{targetname}_briggs_HBA', size=2000, scale='1.5arcsec',
                              no_update_model_required='', padding=1.4,
                              weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
         lib_util.run_wsclean(s, 'highHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
                              name=f'{pathdir}/HBA/images/{targetname}_highres_HBA', size=2000, scale='1.2arcsec',
                              no_update_model_required='', padding=1.4,
                              weight='briggs -1', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i',
                              baseline_averaging=10.0)
 
         lib_util.run_wsclean(s, f'lowHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
                              name=f'{pathdir}/HBA/images/{targetname}_taper30_HBA', size=2000, scale='6arcsec',
                              no_update_model_required='', padding=1.4, taper_gaussian='30asec',
                              weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
         lib_util.run_wsclean(s, f'splowHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
                              name=f'{pathdir}/HBA/images/{targetname}_taper90_HBA', size=2000, scale='18arcsec',
                              no_update_model_required='', padding=1.4, taper_gaussian='90asec',
                              weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
         lib_util.run_wsclean(s, f'lowkpcHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
                              name=f'{pathdir}/HBA/images/{targetname}_taper50kpc_HBA', size=2000, scale=f'{float(taper_asec / 5)}asec',
                              no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_asec)}asec',
                              weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
-        lib_util.run_wsclean(s, f'lowkpcSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/HBA/images/{targetname}_taper50kpcSUB_HBA', size=2000,
-                             scale=f'{float(taper_asec / 5)}asec', data_column ='DIFFUSE_SUB',
-                             no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_asec)}asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
+        if args.dosourcesub:
+            lib_util.run_wsclean(s, f'lowkpcSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/HBA/images/{targetname}_taper50kpcSUB_HBA', size=2000,
+                                 scale=f'{float(taper_asec / 5)}asec', data_column='DIFFUSE_SUB',
+                                 no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_asec)}asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
 
         lib_util.run_wsclean(s, f'splowkpcHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
                              name=f'{pathdir}/HBA/images/{targetname}_taper100kpc_HBA', size=2000,
                              scale=f'{float(taper_aseclow / 5)}asec',
                              no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_aseclow)}asec',
                              weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
-        lib_util.run_wsclean(s, f'lowSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/HBA/images/{targetname}_taper30SUB_HBA', size=2000, data_column ='DIFFUSE_SUB',
-                             scale='6asec', no_update_model_required='', padding=1.4, taper_gaussian='30asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
+        if args.dosourcesub:
+            lib_util.run_wsclean(s, f'lowSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/HBA/images/{targetname}_taper30SUB_HBA', size=2000, data_column='DIFFUSE_SUB',
+                                 scale='6asec', no_update_model_required='', padding=1.4, taper_gaussian='30asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
 
-        lib_util.run_wsclean(s, f'splowSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/HBA/images/{targetname}_taper90SUB_HBA', size=2000, data_column ='DIFFUSE_SUB',
-                             scale='18asec', no_update_model_required='', padding=1.4, taper_gaussian='90asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
+            lib_util.run_wsclean(s, f'splowSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/HBA/images/{targetname}_taper90SUB_HBA', size=2000, data_column='DIFFUSE_SUB',
+                                 scale='18asec', no_update_model_required='', padding=1.4, taper_gaussian='90asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
 
-        lib_util.run_wsclean(s, f'splowkpcSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/HBA/images/{targetname}_taper100kpcSUB_HBA', size=2000,
-                             scale=f'{float(taper_aseclow / 5)}asec', data_column ='DIFFUSE_SUB',
-                             no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_aseclow)}asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
+            lib_util.run_wsclean(s, f'splowkpcSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/HBA/images/{targetname}_taper100kpcSUB_HBA', size=2000,
+                                 scale=f'{float(taper_aseclow / 5)}asec', data_column='DIFFUSE_SUB',
+                                 no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_aseclow)}asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
 
-        lib_util.run_wsclean(s, f'spidxHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
+            lib_util.run_wsclean(s, f'spidxSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/HBA/images/{targetname}_spidxSUB_HBA', size=2000, data_column='DIFFUSE_SUB',
+                                 scale='6asec', no_update_model_required='', padding=1.4, taper_gaussian='30asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
+
+            lib_util.run_wsclean(s, f'spidxlowSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/HBA/images/{targetname}_taper50kpc_spidxSUB_HBA', size=2000,
+                                 scale=f'{float(taper_aseclow/5)}asec', data_column='DIFFUSE_SUB',
+                                 no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_aseclow)}asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
+
+        lib_util.run_wsclean(s, 'spidxHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
                              name=f'{pathdir}/HBA/images/{targetname}_spidx_HBA', size=2000,
-                             scale='3asec', minuv_l = 80, maxuv_l = 14000, no_update_model_required='', padding=1.4,
+                             scale='3asec', minuv_l=80, maxuv_l=14000, no_update_model_required='', padding=1.4,
                              weight='briggs -1', niter=20000, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
-
-        lib_util.run_wsclean(s, f'spidxSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/HBA/images/{targetname}_spidxSUB_HBA', size=2000, data_column ='DIFFUSE_SUB',
-                             scale='6asec', no_update_model_required='', padding=1.4, taper_gaussian='30asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
-
-        lib_util.run_wsclean(s, f'spidxlowSUBHBA.log', MSs_HBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/HBA/images/{targetname}_taper50kpc_spidxSUB_HBA', size=2000,
-                             scale=f'{float(taper_aseclow/5)}asec', data_column ='DIFFUSE_SUB',
-                             no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_aseclow)}asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
         os.system(f'rm {pathdir}/HBA/images/*-00*-*.fits')
@@ -276,28 +283,28 @@ if do_LBA  == True:
                              name=f'{pathdir}/LBA/images/{targetname}_briggs_LBA', size=2000, scale='3arcsec',
                              no_update_model_required='', padding=1.4,
                              weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
         lib_util.run_wsclean(s, f'highLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
                              name=f'{pathdir}/LBA/images/{targetname}_highres_LBA', size=2000, scale='2.5arcsec',
                              no_update_model_required='', padding=1.4,
                              weight='briggs -1', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
         lib_util.run_wsclean(s, f'lowLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
                              name=f'{pathdir}/LBA/images/{targetname}_taper30_LBA', size=2000, scale='6arcsec',
                              no_update_model_required='', padding=1.4, taper_gaussian='30asec',
                              weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
         lib_util.run_wsclean(s, f'splowLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
                              name=f'{pathdir}/LBA/images/{targetname}_taper90_LBA', size=2000, scale='18arcsec',
                              no_update_model_required='', padding=1.4, taper_gaussian='90asec',
                              weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
         lib_util.run_wsclean(s, f'lowkpcLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
@@ -305,7 +312,7 @@ if do_LBA  == True:
                              scale=f'{float(taper_asec / 5)}asec',
                              no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_asec)}asec',
                              weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
         lib_util.run_wsclean(s, f'/splowkpcLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
@@ -313,63 +320,65 @@ if do_LBA  == True:
                              scale=f'{float(taper_aseclow / 5)}asec',
                              no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_aseclow)}asec',
                              weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
-        lib_util.run_wsclean(s, f'lowkpcSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/LBA/images/{targetname}_taper50kpcSUB_LBA', size=2000,
-                             scale=f'{float(taper_asec / 5)}asec', data_column='DIFFUSE_SUB',
-                             no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_asec)}asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
+        if args.dosourcesub:
+            lib_util.run_wsclean(s, f'lowkpcSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/LBA/images/{targetname}_taper50kpcSUB_LBA', size=2000,
+                                 scale=f'{float(taper_asec / 5)}asec', data_column='DIFFUSE_SUB',
+                                 no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_asec)}asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
 
-        lib_util.run_wsclean(s, f'splowkpcSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/LBA/images/{targetname}_taper100kpcSUB_LBA', size=2000,
-                             scale=f'{float(taper_aseclow / 5)}asec', data_column='DIFFUSE_SUB',
-                             no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_aseclow)}asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
+            lib_util.run_wsclean(s, f'splowkpcSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/LBA/images/{targetname}_taper100kpcSUB_LBA', size=2000,
+                                 scale=f'{float(taper_aseclow / 5)}asec', data_column='DIFFUSE_SUB',
+                                 no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_aseclow)}asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
 
-        lib_util.run_wsclean(s, f'lowSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/LBA/images/{targetname}_taper30SUB_LBA', size=2000,
-                             data_column='DIFFUSE_SUB',
-                             scale='6asec', no_update_model_required='', padding=1.4, taper_gaussian='30asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
+            lib_util.run_wsclean(s, f'lowSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/LBA/images/{targetname}_taper30SUB_LBA', size=2000,
+                                 data_column='DIFFUSE_SUB',
+                                 scale='6asec', no_update_model_required='', padding=1.4, taper_gaussian='30asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
 
-        lib_util.run_wsclean(s, f'splowSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/LBA/images/{targetname}_taper90SUB_LBA', size=2000,
-                             data_column='DIFFUSE_SUB',
-                             scale='18asec', no_update_model_required='', padding=1.4, taper_gaussian='90asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
+            lib_util.run_wsclean(s, f'splowSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/LBA/images/{targetname}_taper90SUB_LBA', size=2000,
+                                 data_column='DIFFUSE_SUB',
+                                 scale='18asec', no_update_model_required='', padding=1.4, taper_gaussian='90asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
 
         lib_util.run_wsclean(s, f'spidxLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
                              name=f'{pathdir}/LBA/images/{targetname}_spidx_LBA', size=2000,
                              scale='3asec', minuv_l=80, maxuv_l=14000, no_update_model_required='', padding=1.4,
                              weight='briggs -1', niter=20000, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
+                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
                              baseline_averaging=10.0)
 
-        lib_util.run_wsclean(s, f'spidxSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/LBA/images/{targetname}_spidxSUB_LBA', size=2000,
-                             data_column='DIFFUSE_SUB',
-                             scale='5asec', no_update_model_required='', padding=1.4, taper_gaussian='25asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
+        if args.dosourcesub:
+            lib_util.run_wsclean(s, f'spidxSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/LBA/images/{targetname}_spidxSUB_LBA', size=2000,
+                                 data_column='DIFFUSE_SUB',
+                                 scale='5asec', no_update_model_required='', padding=1.4, taper_gaussian='25asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
 
-        lib_util.run_wsclean(s, f'spidxlowSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
-                             name=f'{pathdir}/LBA/images/{targetname}_taper50kpc_spidxSUB_LBA', size=2000,
-                             scale=f'{float(taper_asec/5)}asec', data_column='DIFFUSE_SUB',
-                             no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_asec)}asec',
-                             weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
-                             fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', reorder='',
-                             baseline_averaging=10.0)
+            lib_util.run_wsclean(s, f'spidxlowSUBLBA.log', MSs_LBA.getStrWsclean(), concat_mss=False,
+                                 name=f'{pathdir}/LBA/images/{targetname}_taper50kpc_spidxSUB_LBA', size=2000,
+                                 scale=f'{float(taper_asec/5)}asec', data_column='DIFFUSE_SUB',
+                                 no_update_model_required='', padding=1.4, taper_gaussian=f'{float(taper_asec)}asec',
+                                 weight='briggs -0.3', niter=20000, minuv_l=80, mgain=0.8, join_channels='',
+                                 fit_spectral_pol=3, channels_out=6, multiscale='', pol='i', 
+                                 baseline_averaging=10.0)
 
         os.system(f'rm {pathdir}/LBA/images/*-00*-*.fits')
         os.system(f'rm {pathdir}/LBA/images/*dirty*')
@@ -416,19 +425,20 @@ if do_plots == True:
             s.add(cmd_plot_lowkpc_HBA, log='plots.log', commandType="python")
             s.run()
 
-            data, header = pyfits.getdata(f'{pathdir}/HBA/images/{targetname}_taper30SUB_HBA-MFS-image.fits', header=True)
-            min, max = get_imgparameters(data)
-            cmd_plot_low_HBA_sub = f'makeimage.py {pathdir}/HBA/images/{targetname}_taper30SUB_HBA-MFS-image.fits --type radio -z {redshift} --radec {ra} {dec} -s 1000 ' \
-                                   f'--show_beam --sbar 500 --show_contours --stretch power -o {pathdir}/HBA/pdf/{targetname}_taper30SUB_HBA --interval {min} {max}'
-            s.add(cmd_plot_low_HBA_sub, log='plots.log', commandType="python")
-            s.run()
+            if args.dosourcesub:
+                data, header = pyfits.getdata(f'{pathdir}/HBA/images/{targetname}_taper30SUB_HBA-MFS-image.fits', header=True)
+                min, max = get_imgparameters(data)
+                cmd_plot_low_HBA_sub = f'makeimage.py {pathdir}/HBA/images/{targetname}_taper30SUB_HBA-MFS-image.fits --type radio -z {redshift} --radec {ra} {dec} -s 1000 ' \
+                                       f'--show_beam --sbar 500 --show_contours --stretch power -o {pathdir}/HBA/pdf/{targetname}_taper30SUB_HBA --interval {min} {max}'
+                s.add(cmd_plot_low_HBA_sub, log='plots.log', commandType="python")
+                s.run()
 
-            data, header = pyfits.getdata(f'{pathdir}/HBA/images/{targetname}_taper100kpcSUB_HBA-MFS-image.fits', header=True)
-            min, max = get_imgparameters(data)
-            cmd_plot_splow_HBA_sub = f'makeimage.py {pathdir}/HBA/images/{targetname}_taper100kpcSUB_HBA-MFS-image.fits --type radio -z {redshift} --radec {ra} {dec} -s 1000 ' \
-                                        f'--show_beam --sbar 500 --show_contours --stretch power -o {pathdir}/HBA/pdf/{targetname}_taper100kpcSUB_HBA --interval {min} {max}'
-            s.add(cmd_plot_splow_HBA_sub, log='plots.log', commandType="python")
-            s.run()
+                data, header = pyfits.getdata(f'{pathdir}/HBA/images/{targetname}_taper100kpcSUB_HBA-MFS-image.fits', header=True)
+                min, max = get_imgparameters(data)
+                cmd_plot_splow_HBA_sub = f'makeimage.py {pathdir}/HBA/images/{targetname}_taper100kpcSUB_HBA-MFS-image.fits --type radio -z {redshift} --radec {ra} {dec} -s 1000 ' \
+                                            f'--show_beam --sbar 500 --show_contours --stretch power -o {pathdir}/HBA/pdf/{targetname}_taper100kpcSUB_HBA --interval {min} {max}'
+                s.add(cmd_plot_splow_HBA_sub, log='plots.log', commandType="python")
+                s.run()
 
 
         if do_LBA == True:
@@ -462,19 +472,20 @@ if do_plots == True:
             s.add(cmd_plot_lowkpc_LBA, log='plots.log', commandType="python")
             s.run()
 
-            data, header = pyfits.getdata(f'{pathdir}/LBA/images/{targetname}_taper30SUB_LBA-MFS-image.fits', header=True)
-            min, max = get_imgparameters(data)
-            cmd_plot_low_LBA_sub = f'makeimage.py {pathdir}/LBA/images/{targetname}_taper30SUB_LBA-MFS-image.fits --type radio -z {redshift} --radec {ra} {dec} -s 1000 ' \
-                                   f'--show_beam --sbar 500 --show_contours --stretch power -o {pathdir}/LBA/pdf/{targetname}_taper30SUB_LBA --interval {min} {max}'
-            s.add(cmd_plot_low_LBA_sub, log='plots.log', commandType="python")
-            s.run()
+            if args.dosourcesub:
+                data, header = pyfits.getdata(f'{pathdir}/LBA/images/{targetname}_taper30SUB_LBA-MFS-image.fits', header=True)
+                min, max = get_imgparameters(data)
+                cmd_plot_low_LBA_sub = f'makeimage.py {pathdir}/LBA/images/{targetname}_taper30SUB_LBA-MFS-image.fits --type radio -z {redshift} --radec {ra} {dec} -s 1000 ' \
+                                       f'--show_beam --sbar 500 --show_contours --stretch power -o {pathdir}/LBA/pdf/{targetname}_taper30SUB_LBA --interval {min} {max}'
+                s.add(cmd_plot_low_LBA_sub, log='plots.log', commandType="python")
+                s.run()
 
-            data, header = pyfits.getdata(f'{pathdir}/LBA/images/{targetname}_taper100kpcSUB_LBA-MFS-image.fits', header=True)
-            min, max = get_imgparameters(data)
-            cmd_plot_splow_LBA_sub = f'makeimage.py {pathdir}/LBA/images/{targetname}_taper100kpcSUB_LBA-MFS-image.fits --type radio -z {redshift} --radec {ra} {dec} -s 1000 ' \
-                                        f'--show_beam --sbar 500 --show_contours --stretch power -o {pathdir}/LBA/pdf/{targetname}_taper100kpcSUB_LBA --interval {min} {max}'
-            s.add(cmd_plot_splow_LBA_sub, log='plots.log', commandType="python")
-            s.run()
+                data, header = pyfits.getdata(f'{pathdir}/LBA/images/{targetname}_taper100kpcSUB_LBA-MFS-image.fits', header=True)
+                min, max = get_imgparameters(data)
+                cmd_plot_splow_LBA_sub = f'makeimage.py {pathdir}/LBA/images/{targetname}_taper100kpcSUB_LBA-MFS-image.fits --type radio -z {redshift} --radec {ra} {dec} -s 1000 ' \
+                                            f'--show_beam --sbar 500 --show_contours --stretch power -o {pathdir}/LBA/pdf/{targetname}_taper100kpcSUB_LBA --interval {min} {max}'
+                s.add(cmd_plot_splow_LBA_sub, log='plots.log', commandType="python")
+                s.run()
 
 if do_spidx == True:
     with w.if_todo(f'Spidx_{targetname}'):

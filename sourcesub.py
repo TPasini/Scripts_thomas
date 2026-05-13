@@ -201,6 +201,9 @@ def subtractcompact(mslist, imageout, pixsize, imsize, minuv, channelsout=6, nit
         if outcolumn not in colnames:
             desc = ts.getcoldesc('DATA')
             desc['name'] = outcolumn
+            # Dysco (AntennaPairStMan) non supporta addcols su array → forzare StandardStMan
+            desc['dataManagerType'] = 'TiledShapeStMan'
+            desc['dataManagerGroup'] = outcolumn
             ts.addcols(desc)
             ts.close()  # to write results
         else:
