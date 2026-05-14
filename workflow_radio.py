@@ -127,7 +127,7 @@ if os.path.exists(HBA_dir):
         os.makedirs(f'{pathdir}/HBA/datasets')
         os.system(f'mv {pathdir}/HBA/*calibrated {pathdir}/HBA/datasets')
         os.system(f'mv {pathdir}/HBA/*archive* {pathdir}/HBA/datasets')
-    MSs_HBA = lib_ms.AllMSs(glob.glob(f'{pathdir}/HBA/datasets/*calibrated') + glob.glob(f"{pathdir}/HBA/datasets/*archive*"), s)
+    MSs_HBA = lib_ms.AllMSs(list(set(glob.glob(f'{pathdir}/HBA/datasets/*calibrated') + glob.glob(f"{pathdir}/HBA/datasets/*archive*"))), s)
     if not os.path.exists(f'{pathdir}/HBA/logs'):
         os.makedirs(f'{pathdir}/HBA/logs')
     if args.dosourcesub == True:
