@@ -115,7 +115,7 @@ def makeimage(mslist, imageout, pixsize, imsize, channelsout=6, niter=15000, rob
 
     # build wsclean command
     cmd = wsclean + ' '
-    cmd += '-no-update-model-required -minuv-l ' + str(minuv) + ' '
+    cmd += '-no-update-model-required -j 128 -minuv-l ' + str(minuv) + ' '
     cmd += '-size ' + str(imsizein) + ' ' + str(imsizein) + ' -reorder '
     cmd += '-weight briggs ' + str(robust) + ' -weighting-rank-filter 3 -clean-border 1 -use-wgridder '
     cmd += '-mgain 0.8 -fit-beam -data-column ' + imcol + ' -join-channels -channels-out '
@@ -201,11 +201,21 @@ def subtractcompact(mslist, imageout, pixsize, imsize, minuv, channelsout=6, nit
         if outcolumn not in colnames:
             desc = ts.getcoldesc('DATA')
             desc['name'] = outcolumn
-            # Dysco (AntennaPairStMan) non supporta addcols su array → forzare StandardStMan
-            desc['dataManagerType'] = 'TiledShapeStMan'
+            desc['dataManagerType']  = 'TiledShapeStMan'
             desc['dataManagerGroup'] = outcolumn
-            ts.addcols(desc)
-            ts.close()  # to write results
+            # Tile shape: [npol, nfreq_tile, nrow_tile]
+            data_shape = ts.getcell('DATA', 0).shape   # (nchans, npol)
+            tile_shape = [data_shape[1], min(16, data_shape[0]), 128]
+            dminfo = {
+                '*1': {
+                    'NAME'   : outcolumn,
+                    'TYPE'   : 'TiledShapeStMan',
+                    'SPEC'   : {'DEFAULTTILESHAPE': tile_shape},
+                    'COLUMNS': [outcolumn],
+                }
+            }
+            ts.addcols(desc, dminfo)
+            ts.close()
         else:
             print(outcolumn, ' already exists')
             ts.close()
