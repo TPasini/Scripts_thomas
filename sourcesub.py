@@ -174,24 +174,24 @@ def makeimage(mslist, imageout, pixsize, imsize, channelsout=6, niter=15000, rob
 
 
 def subtractcompact(mslist, imageout, pixsize, imsize, minuv, channelsout=6, niter=15000, robust=-0.5,
-                    outcolumn='DIFFUSE_SUB'):
+                    outcolumn='DIFFUSE_SUB', fitsmask=None):
     makemask = 'make_mask.py'
 
     print('Producing image with compact sources...')
     makeimage(mslist, imageout + '_compact', pixsize, imsize, channelsout=channelsout, niter=niter, robust=robust,
-              minuv=minuv, predict=False)
+              minuv=minuv, predict=False, fitsmask=fitsmask)
 
-    # make a mask
+    # always create mask from the compact image output
     imagename = imageout + '_compact' + '-MFS-image.fits'
     cmdm = makemask + ' ' + imagename
     print(f'Doing {cmdm}...')
     os.system(cmdm)
-    fitsmask = imagename + '.newmask'
+    fitsmask_internal = imagename + '.newmask'
 
-    # re-image with mask
+    # re-image with the internally generated mask
     print(f'Producing image with mask...')
     makeimage(mslist, imageout + '_compactmask', pixsize, imsize, channelsout=channelsout, niter=niter, robust=-0.5,
-              minuv=minuv, multiscale=True, predict=True, fitsmask=fitsmask, deepmultiscale=False)
+              minuv=minuv, multiscale=True, predict=True, fitsmask=fitsmask_internal, deepmultiscale=False)
 
     # now subtract the columns
 
@@ -247,6 +247,7 @@ parser.add_argument('--pixelscale', help='pixels size in arcsec, deafult=1.5', d
 parser.add_argument('--sourceLLS', help='size in Mpc of diffuse emission for uvcut, default=0.25', default=0.4,type=float)
 parser.add_argument('-i', '--imagename', help='imagename', default='image', required=True, type=str)
 parser.add_argument('--maskthreshold', help='Pixel threshold for make_mask.py, default=5.0', default=5.0, type=float)
+parser.add_argument('--fitsmask', help='FITS mask to use for the first wsclean imaging step (compact source image). If not provided, wsclean uses auto-mask.', default=None, type=str)
 parser.add_argument('ms', nargs='*', help='msfile(s)')
 
 args = vars(parser.parse_args())
@@ -273,7 +274,7 @@ if __name__ == "__main__":
     minuv_forsub = compute_uvmin(args['z'], sourceLLS=args['sourceLLS'])
 
     print('Subtracting sources...')
-    subtractcompact(mslist, imageout, pixsize, imsize, minuv_forsub, channelsout=args['channelsout'], niter=int(niter / 1.25), robust=-0.5, outcolumn='DIFFUSE_SUB')
+    subtractcompact(mslist, imageout, pixsize, imsize, minuv_forsub, channelsout=args['channelsout'], niter=int(niter / 1.25), robust=-0.5, outcolumn='DIFFUSE_SUB', fitsmask=args['fitsmask'])
     print('Done.')
 
 if args['produce_images']:
