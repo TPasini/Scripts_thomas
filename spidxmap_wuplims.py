@@ -135,8 +135,15 @@ if __name__ == '__main__':
     regrid_hdr['BMAJ'] = b[0]
     regrid_hdr['BMIN'] = b[1]
     regrid_hdr['BPA'] = b[2]
-    if args.noise: yerr = np.array([ image.noise for image in all_images ])
-    else: yerr = None
+    if args.noise:
+        noise_vals = [image.noise for image in all_images]
+        if any(n is None for n in noise_vals):
+            logging.warning('Some image noise values are None after noise estimation; '
+                            'replacing with 0. Check images for valid pixel coverage.')
+            noise_vals = [0. if n is None else n for n in noise_vals]
+        yerr = np.array(noise_vals, dtype=float)
+    else:
+        yerr = None
     spidx_data = np.empty(shape=(xsize, ysize))
     spidx_data[:] = np.nan
     spidx_err_data = np.empty(shape=(xsize, ysize))
@@ -175,8 +182,20 @@ if __name__ == '__main__':
                         spidx_data[i,j] = np.nan
                         spidx_err_data[i,j] = np.nan
                 else:
-                    this_err = np.sqrt(yerr ** 2 + (args.fluxscaleerr * val4reg) ** 2)
-                    spidx_data[i,j], spidx_err_data[i,j] = linsq_spidx(frequencies, val4reg, this_err)
+                    # skip pixel if any value is NaN or non-positive (log would blow up)
+                    if np.isnan(val4reg).any() or np.any(val4reg <= 0):
+                        continue
+                    if yerr is not None:
+                        this_err = np.sqrt(yerr ** 2 + (args.fluxscaleerr * val4reg) ** 2)
+                    elif args.fluxscaleerr:
+                        this_err = np.abs(args.fluxscaleerr * val4reg)
+                    else:
+                        this_err = None
+                    result = linsq_spidx(frequencies, val4reg, this_err)
+                    if this_err is not None:
+                        spidx_data[i,j], spidx_err_data[i,j] = result
+                    else:
+                        spidx_data[i,j] = result
             else:
                 (a, b, sa, sb) = linear_fit_bootstrap(x=frequencies, y=val4reg, yerr=yerr, tolog=True)
                 spidx_data[i,j] = a
