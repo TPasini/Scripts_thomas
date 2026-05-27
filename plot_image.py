@@ -42,6 +42,8 @@ parser.add_argument('--transparent', default=False, action='store_true', help='T
 parser.add_argument('--cat', default=None, type=str, help='Plot catalogue.')
 parser.add_argument('--dpi', default=200, type=int)
 parser.add_argument('--show_contours', action='store_true', help='Show contours.')
+parser.add_argument('--cbar_fontsize', default=None, type=int, help='Font size for colorbar label and tick numbers (default: same as --fontsize or 19).')
+parser.add_argument('--no_coord', default=False, action='store_true', help='Remove all coordinate info from axes (no labels, ticks, tick numbers, axis spines).')
 
 args = parser.parse_args()
 if args.image == None:
@@ -77,6 +79,7 @@ show_cbar = not args.no_cbar
 show_grid = args.show_grid
 show_axes = not args.no_axes
 show_contours = args.show_contours
+cbar_fontsize = args.cbar_fontsize if args.cbar_fontsize is not None else fontsize + 1
 contout_base_sigma = 3 # will be this times [1,2,4,8,16]
 n_contour = 9
 
@@ -166,8 +169,7 @@ norm = ImageNormalize(data, vmin=float(int_min), vmax=float(int_max), stretch=st
 logging.info("Image...")
 if plottype in ['si','si+err']:
     # from colormaps import *
-    import nmmn.plots
-    turbo = nmmn.plots.turbocmap()  # Turbo
+    turbo = plt.get_cmap('turbo')  # built-in since matplotlib 3.3 (replaces nmmn dependency)
     ul_mask = np.ones_like(data, dtype=int)
     ll_mask = np.ones_like(data, dtype=int)
     all_limit_mask = np.ones_like(data, dtype=int)
@@ -248,9 +250,9 @@ if show_cbar:
     im.set_clim(vmax=int_max, vmin=int_min)
     if args.cbar_vertical:
         # addCbar(fig, plottype, im, header, float(int_min), float(int_max), fontsize=fontsize+1,cbanchor=[0.772, 0.11, 0.03, 0.77], orientation='vertical')
-        addCbar(fig, plottype, im, header, float(int_min), float(int_max), fontsize=fontsize+1, labelshift=0, cbanchor=[0.872, 0.11, 0.03, 0.77], orientation='vertical')
+        addCbar(fig, plottype, im, header, float(int_min), float(int_max), fontsize=cbar_fontsize, cbanchor=[0.872, 0.11, 0.03, 0.77], orientation='vertical')
     else:
-        addCbar(fig, plottype, im, header, float(int_min), float(int_max), fontsize=fontsize+1, labelshift=0)
+        addCbar(fig, plottype, im, header, float(int_min), float(int_max), fontsize=cbar_fontsize)
 
 # scalebar
 if show_scalebar:
@@ -294,6 +296,13 @@ else:
         axis.set_ticks_visible(False)
     # hide x and y axes tick marks
     # ax.axis('off')
+
+if args.no_coord:
+    for axis in lon, lat:
+        axis.set_axislabel('')
+        axis.set_ticklabel_visible(False)
+        axis.set_ticks_visible(False)
+    ax.coords.frame.set_linewidth(0)
 
 try:
     if np.any(all_limit_mask == 0):  # only if we have any upper limits
